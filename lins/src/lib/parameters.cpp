@@ -19,6 +19,15 @@
 
 namespace parameter {
 
+const int N_SCAN = 128;
+const int Horizon_SCAN = 1024;
+const float ang_res_x = 360.0/float(Horizon_SCAN);
+const float ang_res_y = 90./float(N_SCAN-1);
+const float ang_bottom = 44.5+0.1;
+//extern const int groundScanInd = 30;
+const int groundScanInd = 30;
+const bool sensorFlipped = true;
+
 // !@ENABLE_CALIBRATION
 int CALIBARTE_IMU;
 int SHOW_CONFIGURATION;
@@ -131,14 +140,14 @@ void readParameters(ros::NodeHandle& n) {
   readQ4D(&fsSettings, "init_rbl", INIT_RBL);
 }
 
-void readV3D(cv::FileStorage* file, const std::__cxx11::string& name,
+void readV3D(cv::FileStorage* file, const std::string& name,
              V3D& vec_eigen) {
   cv::Mat vec_cv;
   (*file)[name] >> vec_cv;
   cv::cv2eigen(vec_cv, vec_eigen);
 }
 
-void readQ4D(cv::FileStorage* file, const std::__cxx11::string& name,
+void readQ4D(cv::FileStorage* file, const std::string& name,
              Q4D& quat_eigen) {
   cv::Mat mat_cv;
   (*file)[name] >> mat_cv;

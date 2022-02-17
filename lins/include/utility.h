@@ -2,7 +2,7 @@
 #define INCLUDE_UTILITY_H_
 
 #include <nav_msgs/Odometry.h>
-#include <opencv/cv.h>
+#include <opencv2/core.hpp>
 #include <pcl/common/common.h>
 #include <pcl/filters/filter.h>
 #include <pcl/filters/voxel_grid.h>
@@ -46,20 +46,32 @@ using namespace std;
 typedef pcl::PointXYZI PointType;
 
 // VLP-16
-extern const int N_SCAN = 16;
-extern const int Horizon_SCAN = 1800;
-extern const float ang_res_x = 0.2;
-extern const float ang_res_y = 2.0;
-extern const float ang_bottom = 15.0 + 0.1;
-extern const int groundScanInd = 5;
+//extern const int N_SCAN = 16;
+//extern const int Horizon_SCAN = 1800;
+//extern const float ang_res_x = 0.2;
+//extern const float ang_res_y = 2.0;
+//extern const float ang_bottom = 15.0 + 0.1;
+//extern const int groundScanInd = 5;
+//extern const bool sensorFlipped = false;
 
 // Ouster OS1-64
-// extern const int N_SCAN = 64;
-// extern const int Horizon_SCAN = 1024;
-// extern const float ang_res_x = 360.0/float(Horizon_SCAN);
-// extern const float ang_res_y = 33.2/float(N_SCAN-1);
-// extern const float ang_bottom = 16.6+0.1;
-// extern const int groundScanInd = 15;
+//extern const int N_SCAN = 64;
+//extern const int Horizon_SCAN = 1024;
+//extern const float ang_res_x = 360.0/float(Horizon_SCAN);
+//extern const float ang_res_y = 33.2/float(N_SCAN-1);
+//extern const float ang_bottom = 16.6+0.1;
+//extern const int groundScanInd = 15;
+//extern const bool sensorFlipped = false;
+
+// Ouster OS0-128
+extern const int N_SCAN = 128;
+extern const int Horizon_SCAN = 1024;
+extern const float ang_res_x = 360.0/float(Horizon_SCAN);
+extern const float ang_res_y = 90./float(N_SCAN-1);
+extern const float ang_bottom = 44.5+0.1;
+//extern const int groundScanInd = 30;
+extern const int groundScanInd = 30;
+extern const bool sensorFlipped = true;
 
 extern const bool loopClosureEnableFlag = true;
 extern const double mappingProcessInterval = 0.3;

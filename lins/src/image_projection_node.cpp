@@ -169,11 +169,18 @@ class ImageProjection {
 
   ~ImageProjection() {}
 
+  static constexpr float thresh = 3.0;
+  static constexpr float thresh2 = thresh*thresh;
+
   void copyPointCloud(const sensor_msgs::PointCloud2ConstPtr& laserCloudMsg) {
     cloudHeader = laserCloudMsg->header;
     pcl::fromROSMsg(*laserCloudMsg, *laserCloudIn);
-    std::vector<int> indices;
-    pcl::removeNaNFromPointCloud(*laserCloudIn, *laserCloudIn, indices);
+    //std::vector<int> indices;
+    //pcl::removeNaNFromPointCloud(*laserCloudIn, *laserCloudIn, indices);
+
+    if ( sensorFlipped )
+        for (size_t i = 0; i < laserCloudIn->points.size(); ++i)
+            laserCloudIn->points[i].z = -laserCloudIn->points[i].z;
   }
 
   void cloudHandler(const sensor_msgs::PointCloud2ConstPtr& laserCloudMsg) {
@@ -189,12 +196,26 @@ class ImageProjection {
   }
 
   void findStartEndAngle() {
-    segMsg.startOrientation =
-        -atan2(laserCloudIn->points[0].y, laserCloudIn->points[0].x);
-    segMsg.endOrientation =
-        -atan2(laserCloudIn->points[laserCloudIn->points.size() - 1].y,
-               laserCloudIn->points[laserCloudIn->points.size() - 2].x) +
-        2 * M_PI;
+
+
+      int cloudSize = laserCloudIn->points.size();
+      int firstValid = 0;
+      for (firstValid = 0; firstValid < cloudSize; ++firstValid) {
+          const float d = laserCloudIn->points[firstValid].x * laserCloudIn->points[firstValid].x +
+                  laserCloudIn->points[firstValid].y * laserCloudIn->points[firstValid].y +
+                  laserCloudIn->points[firstValid].z * laserCloudIn->points[firstValid].z;
+          if ( std::isfinite(d) && d >= thresh2 ) break;
+      }
+      int lastValid = cloudSize - 1;
+      for (lastValid = cloudSize - 1; lastValid >= 0; --lastValid) {
+          const float d = laserCloudIn->points[lastValid].x * laserCloudIn->points[lastValid].x +
+                  laserCloudIn->points[lastValid].y * laserCloudIn->points[lastValid].y +
+                  laserCloudIn->points[lastValid].z * laserCloudIn->points[lastValid].z;
+          if ( std::isfinite(d) && d >= thresh2 ) break;
+      }
+
+    segMsg.startOrientation = -atan2(laserCloudIn->points[firstValid].y, laserCloudIn->points[firstValid].x);
+    segMsg.endOrientation = -atan2(laserCloudIn->points[lastValid].y, laserCloudIn->points[lastValid].x) + 2 * M_PI;
     if (segMsg.endOrientation - segMsg.startOrientation > 3 * M_PI) {
       segMsg.endOrientation -= 2 * M_PI;
     } else if (segMsg.endOrientation - segMsg.startOrientation < M_PI)
@@ -210,25 +231,44 @@ class ImageProjection {
     cloudSize = laserCloudIn->points.size();
 
     for (size_t i = 0; i < cloudSize; ++i) {
+
       thisPoint.x = laserCloudIn->points[i].x;
       thisPoint.y = laserCloudIn->points[i].y;
       thisPoint.z = laserCloudIn->points[i].z;
 
-      verticalAngle = atan2(thisPoint.z, sqrt(thisPoint.x * thisPoint.x +
-                                              thisPoint.y * thisPoint.y)) *
-                      180 / M_PI;
-      rowIdn = (verticalAngle + ang_bottom) / ang_res_y;
-      if (rowIdn < 0 || rowIdn >= LINE_NUM) continue;
+      range = sqrt(thisPoint.x * thisPoint.x + thisPoint.y * thisPoint.y + thisPoint.z * thisPoint.z);
+      if ( range < thresh || !std::isfinite(range) ) continue;
 
-      horizonAngle = atan2(thisPoint.x, thisPoint.y) * 180 / M_PI;
+      if ( LINE_NUM == 128 )
+      { // 105372 % 1024 = col = 924 ... row = 105372 / 1024 = 102
+          columnIdn = i / LINE_NUM;
+          rowIdn = i % LINE_NUM;
+          if ( i != ( rowIdn + columnIdn * LINE_NUM )) ROS_ERROR_STREAM("what dafuq? " << i << " c: " << columnIdn << " r: " << rowIdn );
+//          columnIdn = i % SCAN_NUM;
+//          rowIdn = i / SCAN_NUM;
+          //if ( i != (columnIdn + rowIdn * SCAN_NUM )) ROS_ERROR_STREAM("what dafuq? " << i << " c: " << columnIdn << " r: " << rowIdn );
+          if (rowIdn < 0 || rowIdn >= LINE_NUM || columnIdn < 0 || columnIdn >= SCAN_NUM)
+          {
+              ROS_ERROR_STREAM("ups... row: " << rowIdn << " col: " << columnIdn << " i: " << i << " ln: " << LINE_NUM << " sn: " << SCAN_NUM );
+              throw std::runtime_error("nope!");
+          }
+          if ( sensorFlipped ) rowIdn = (LINE_NUM-1) - rowIdn;
+      }
+      else
+      {
+          verticalAngle = atan2(thisPoint.z, sqrt(thisPoint.x * thisPoint.x + thisPoint.y * thisPoint.y)) * 180 / M_PI;
+          rowIdn = (verticalAngle + ang_bottom) / ang_res_y;
 
-      columnIdn = -round((horizonAngle - 90.0) / ang_res_x) + SCAN_NUM / 2;
-      if (columnIdn >= SCAN_NUM) columnIdn -= SCAN_NUM;
 
-      if (columnIdn < 0 || columnIdn >= SCAN_NUM) continue;
+          if (rowIdn < 0 || rowIdn >= LINE_NUM) continue;
 
-      range = sqrt(thisPoint.x * thisPoint.x + thisPoint.y * thisPoint.y +
-                   thisPoint.z * thisPoint.z);
+          horizonAngle = atan2(thisPoint.x, thisPoint.y) * 180 / M_PI;
+
+          columnIdn = -round((horizonAngle - 90.0) / ang_res_x) + SCAN_NUM / 2;
+          if (columnIdn >= SCAN_NUM) columnIdn -= SCAN_NUM;
+          if (columnIdn < 0 || columnIdn >= SCAN_NUM) continue;
+      }
+
       rangeMat.at<float>(rowIdn, columnIdn) = range;
 
       thisPoint.intensity = (float)rowIdn + (float)columnIdn / 10000.0;
@@ -243,9 +283,11 @@ class ImageProjection {
   void groundRemoval() {
     size_t lowerInd, upperInd;
     float diffX, diffY, diffZ, angle;
-
+    ROS_INFO_STREAM("groundMat: " << groundMat.rows << " " << groundMat.cols << " flipped: " << sensorFlipped );
     for (size_t j = 0; j < SCAN_NUM; ++j) {
-      for (size_t i = 0; i < groundScanInd; ++i) {
+      size_t i = sensorFlipped ? LINE_NUM-1-groundScanInd : 0;
+      for (; (!sensorFlipped && i < groundScanInd) || (sensorFlipped && i < (LINE_NUM-1)); ++i) {
+
         lowerInd = j + (i)*SCAN_NUM;
         upperInd = j + (i + 1) * SCAN_NUM;
 
@@ -265,19 +307,21 @@ class ImageProjection {
           groundMat.at<int8_t>(i, j) = 1;
           groundMat.at<int8_t>(i + 1, j) = 1;
         }
+        //if ( i % 4 == 0 && j % 10 == 0 ) ROS_INFO_STREAM( "i: " << i << " j: " << j << " ang: " << angle << " g: " << int(groundMat.at<int8_t>(i,j)) );
       }
     }
 
     for (size_t i = 0; i < LINE_NUM; ++i) {
       for (size_t j = 0; j < SCAN_NUM; ++j) {
         if (groundMat.at<int8_t>(i, j) == 1 ||
-            rangeMat.at<float>(i, j) == FLT_MAX) {
+            rangeMat.at<float>(i, j) == FLT_MAX ) {
           labelMat.at<int>(i, j) = -1;
         }
       }
     }
     if (pubGroundCloud.getNumSubscribers() != 0) {
-      for (size_t i = 0; i <= groundScanInd; ++i) {
+      size_t i = sensorFlipped ? LINE_NUM-1-groundScanInd : 0;
+      for (; (!sensorFlipped && i <= groundScanInd) || (sensorFlipped && i < LINE_NUM); ++i) {
         for (size_t j = 0; j < SCAN_NUM; ++j) {
           if (groundMat.at<int8_t>(i, j) == 1)
             groundCloud->push_back(fullCloud->points[j + i * SCAN_NUM]);
@@ -298,7 +342,7 @@ class ImageProjection {
       for (size_t j = 0; j < SCAN_NUM; ++j) {
         if (labelMat.at<int>(i, j) > 0 || groundMat.at<int8_t>(i, j) == 1) {
           if (labelMat.at<int>(i, j) == 999999) {
-            if (i > groundScanInd && j % 5 == 0) {
+            if ( (!sensorFlipped && i > groundScanInd ) || (sensorFlipped && i < groundScanInd) && j % 5 == 0) {
               outlierCloud->push_back(fullCloud->points[j + i * SCAN_NUM]);
               continue;
             } else {

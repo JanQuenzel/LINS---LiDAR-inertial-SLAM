@@ -79,10 +79,11 @@ const double EeEe = Ee * Ee;
 /*!@SLAM COEFFICIENTS */
 const bool loopClosureEnableFlag = true;
 const double mappingProcessInterval = 0.3;
-const float ang_res_x = 0.2;
-const float ang_res_y = 2.0;
-const float ang_bottom = 15.0 + 0.1;
-const int groundScanInd = 5;
+extern const float ang_res_x; // = 0.2;
+extern const float ang_res_y; // = 2.0;
+extern const float ang_bottom; // = 15.0 + 0.1;
+extern const int groundScanInd; //  = 5;
+extern const bool sensorFlipped; // = true;
 const int systemDelay = 0;
 const float sensorMountAngle = 0.0;
 const float segmentTheta = 1.0472;
