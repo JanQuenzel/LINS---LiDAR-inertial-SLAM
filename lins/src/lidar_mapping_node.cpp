@@ -774,6 +774,15 @@ class MappingHandler {
     aftMappedTrans.setOrigin(tf::Vector3(
         transformAftMapped[3], transformAftMapped[4], transformAftMapped[5]));
     tfBroadcaster.sendTransform(aftMappedTrans);
+    {
+      // write to file:
+      static std::ofstream posesFile ("./lins_after_map_poses.txt");
+      if( posesFile.is_open() )
+      {
+        posesFile << (odomAftMapped.header.stamp.toNSec()) << " " << odomAftMapped.pose.pose.position.x << " " << odomAftMapped.pose.pose.position.y << " " << odomAftMapped.pose.pose.position.z
+                  << " " << odomAftMapped.pose.pose.orientation.x << " " << odomAftMapped.pose.pose.orientation.y << " " << odomAftMapped.pose.pose.orientation.z << " " << odomAftMapped.pose.pose.orientation.w <<"\n";
+      }
+    }
   }
 
   void publishXYZTF() {
