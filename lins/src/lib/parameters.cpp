@@ -25,7 +25,7 @@ const float ang_res_x = 360.0/float(Horizon_SCAN);
 const float ang_res_y = 90./float(N_SCAN-1);
 const float ang_bottom = 44.5+0.1;
 //extern const int groundScanInd = 30;
-const int groundScanInd = 30;
+const int groundScanInd = 45;
 const bool sensorFlipped = true;
 
 // !@ENABLE_CALIBRATION

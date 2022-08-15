@@ -70,7 +70,7 @@ extern const float ang_res_x = 360.0/float(Horizon_SCAN);
 extern const float ang_res_y = 90./float(N_SCAN-1);
 extern const float ang_bottom = 44.5+0.1;
 //extern const int groundScanInd = 30;
-extern const int groundScanInd = 30;
+extern const int groundScanInd = 45;
 extern const bool sensorFlipped = true;
 
 extern const bool loopClosureEnableFlag = true;

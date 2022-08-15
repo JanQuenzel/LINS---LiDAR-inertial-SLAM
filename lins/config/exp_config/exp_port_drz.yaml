@@ -1,7 +1,7 @@
 %YAML:1.0
 
 # settings
-calibrate_imu: 1  # 0: no imu calibration and use default values. 1: calibrate imu
+calibrate_imu: 0  # 0: no imu calibration and use default values. 1: calibrate imu
 show_configuration: 0
 average_nums: 100
 imu_lidar_extrinsic_angle: 0.0
@@ -47,7 +47,7 @@ init_att_std: !!opencv-matrix
    rows: 3
    cols: 1
    dt: d
-   data: [0.0, 0.0, 0.0]
+   data: [0.001, 0.001, 0.001]
    
 init_acc_std: !!opencv-matrix
    rows: 3
@@ -66,28 +66,28 @@ init_ba: !!opencv-matrix
    rows: 3
    cols: 1
    dt: d
-   data: [-0.015774,0.143237,-0.0263845]
+   data: [0.0,0.0,0.0]
    
 init_bw: !!opencv-matrix
    rows: 3
    cols: 1
    dt: d
-   data: [-0.00275058,-0.000165954,0.00262913]
+   data: [0.0,0.0,0.0]
    
 # extrinsic parameters
 init_tbl: !!opencv-matrix
    rows: 3
    cols: 1
    dt: d
-   data: [0.0,0.0,0.0]
+   data: [0.031775, 0.0832276, -0.217189]
    
 init_rbl: !!opencv-matrix
    rows: 3
    cols: 3
    dt: d
-   data:  [-1, 0, 0, 
+   data:  [1, 0, 0,
            0, 1, 0, 
-           0, 0, -1]
+           0, 0, 1]
    
 
 

@@ -179,8 +179,16 @@ class ImageProjection {
     //pcl::removeNaNFromPointCloud(*laserCloudIn, *laserCloudIn, indices);
 
     if ( sensorFlipped )
+    {
+        const static Eigen::Quaterniond q = Eigen::Quaterniond(0,-0.7071,0.7071,0).normalized();
         for (size_t i = 0; i < laserCloudIn->points.size(); ++i)
-            laserCloudIn->points[i].z = -laserCloudIn->points[i].z;
+        {
+            const Eigen::Vector3d p = q*Eigen::Vector3d( laserCloudIn->points[i].x, laserCloudIn->points[i].y, laserCloudIn->points[i].z );
+            laserCloudIn->points[i].x = p.x();
+            laserCloudIn->points[i].y = p.y();
+            laserCloudIn->points[i].z = p.z();
+        }
+    }
   }
 
   void cloudHandler(const sensor_msgs::PointCloud2ConstPtr& laserCloudMsg) {
@@ -283,13 +291,21 @@ class ImageProjection {
   void groundRemoval() {
     size_t lowerInd, upperInd;
     float diffX, diffY, diffZ, angle;
-    ROS_INFO_STREAM("groundMat: " << groundMat.rows << " " << groundMat.cols << " flipped: " << sensorFlipped );
+    //ROS_INFO_STREAM("groundMat: " << groundMat.rows << " " << groundMat.cols << " flipped: " << sensorFlipped );
     for (size_t j = 0; j < SCAN_NUM; ++j) {
       size_t i = sensorFlipped ? LINE_NUM-1-groundScanInd : 0;
       for (; (!sensorFlipped && i < groundScanInd) || (sensorFlipped && i < (LINE_NUM-1)); ++i) {
 
-        lowerInd = j + (i)*SCAN_NUM;
-        upperInd = j + (i + 1) * SCAN_NUM;
+        if ( sensorFlipped )
+        {
+            lowerInd = j + (i + 1) * SCAN_NUM;
+            upperInd = j + (i)*SCAN_NUM;
+        }
+        else
+        {
+            lowerInd = j + (i)*SCAN_NUM;
+            upperInd = j + (i + 1) * SCAN_NUM;
+        }
 
         if (fullCloud->points[lowerInd].intensity == -1 ||
             fullCloud->points[upperInd].intensity == -1) {
